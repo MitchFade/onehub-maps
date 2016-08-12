@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1> Getting started: your first program in OneHub APi</h1>
+<h3>Prerequisites: </h3>
+<p>For this tutorial you will need to have rails installed and have access to both the app and the config directory. You will also need a basic understanding of ruby</p>
+<p></p>
+<h3>Link to how to install rails:</h3>
+<link href="">
+
+
+<! include break statements> 
+
+
+<h3>First step: Using the OAuth2 client to have access to the OneHub API</h3>
+<p>In order to use the OneHub API you need to bundle the OAuth2 gem with your projects and include the gem in your GEMFILE</p>
+<p>A link to the OAuth2 gem can be found here:</p>
+
+<p>Next under app -> controllers -> welcome_index.rb (in this tutorial we use the controller for the default #index page) write "require OAuth2" to include the gem in your app's controller. Under the controllers class add your API host. This will be different from the tutorial. Under "def index" add a new array called options and a new global variable to contain your OneHub login information. Finally create a global variable to list the workspaces. The final code should look like:</p>
+
+
+<!dont use master for the demo!> 
+
+<textarea rows="4" cols="50" readonly>
+require 'oauth2'
+
+class WelcomeController < ApplicationController
+  API_HOST = 'ws.onehubmaster.com'
+
+  def index
+    @controller_message =  10
+    @controller_message2 =  20  
+
+    options = {}
+    #def method for oauth 
+    # these should be changed / omitted from example code
+    
+    @client = Onehub.new('mitchfade11@gmail.com', 'weenie123')
+    # => OAuth2::Response"
+    @workspaces = @client.list_workspaces
+</textarea>
+
+<h3>Working with the OneHub API key</h3>
+
+<p>After you have entered the nesesary code to conroller, create a new file titled "onehub.rb" under the lib folder in your rails project. Create a class titled OneHub and then set your OAuth2 API key, secret and API host. Next create a new subroutine to login with the OAuth 2 key and secret.
+The final code should look like:</p>
+<br>
+<textarea rows="10" cols="60" readonly>
+class Onehub
+  API_KEY    = '7q2nkfd3mbhazr4kstud87syq91gt70'.freeze
+  API_SECRET = 'hyn3fepcy8i5curm9jeqm378052z62'.freeze
+  API_HOST   = 'https://ws-api.onehubmaster.com'.freeze
+
+  def initialize(username, password)
+    @client = OAuth2::Client.new(API_KEY, API_SECRET, site: API_HOST)
+    @token  = @client.password.get_token(username, password)
+  end
+</textarea>
+<br> 
+<h3>Listing workspaces</h3>
+<p>Now its time to actually do something with the OneHub API! YAY! </p>
+<p>In your onehub.rb file add a new method which lists workspaces and can be called later in the view. To do this use the json.parse command to retun information about a OneHub workspace in JSON format. OneHub uses a REST interface which returns JSON. Use the path '/workspaces.json' to call JSON containing metadata about the workspaces in your OneHub account. The method should look like: </p>
+<br> 
+<textarea rows="3" cols="60" readonly>
+ def list_workspaces
+    JSON.parse(@token.get('/workspaces.json').body)
+  end
+</textarea>
+<br> 
+<p>To return the metadata from your workspace in your view (In this tutorial we used the default index.html.erb) create a .each loop within your erb hashes. To do this we will call the global variable @workspaces which we defined in the controller and use the hash ['items']. Next define a new variable "workspace" with the hash ['worspaces'] which we will later call to display information about the workspaces. Finally in a visible erb hash (a "<%=" ) we can call the variable workspace with the hash ['name'] which will display information about workspaces. The final erb code should look like: </p>
+<br>
+<textarea rows="4" cols="60" readonly>
+<% @workspaces['items'].each do |workspace| %>
+  <% workspace = workspace['workspace'] %>
+  <h2><%= workspace['name'] %></h2>
+<% end %>
+</textarea>
+<br> 
+<h3>Returning the name of files in a workspace:</h3>
+<p>Back in your onehub.rb file add a new method called list_file to parse JSON that shows metadata about the files within a workspace. In this method we will use the path "/workspaces/#{workspace_id}/files.json" to retrieve JSON specific to a workspace. The final code in onehub.rb should look like: </p>
+<br> 
+<textarea rows="3" cols="60" readonly>
+  def list_files(workspace_id) 
+    JSON.parse(@token.get("/workspaces/#{workspace_id}/files.json").body)
+  end
+</textarea>
+<br> 
+<p>Next we can call the method in index.html.erb inside of our .each loop in order to display the information. The final code in the erb file is now: </p>
+<br>
+<textarea rows="4" cols="60" readonly>
+<% @workspaces['items'].each do |workspace| %>
+  <% workspace = workspace['workspace'] %>
+  <h2><%= workspace['name'] %></h2>
+  <h3><%= @client.list_files(workspace['id']) %></h3>
+<% end %>
+</textarea>
+<br> 
+<p>Congragulations! you now know how to call and return infromation from OneHub's API!</p>
+
+<h3>Reading files with the OneHub API:</h3>
+
+
+
+<h3>Uploading files with the OneHub API:</h3>
+
+
+
+<textarea rows="10" cols="60" readonly>
+  def list_files(workspace_id) 
+    JSON.parse(@token.get("/workspaces/#{workspace_id}/files.json").body)
+  end
+</textarea>
+
+
+
+</body>
+</html>
