@@ -1,0 +1,236 @@
+<h1>Welcome#index</h1>
+<p>Find me in app/views/welcome/index.html.erb</p>
+
+<p>Description of program: This program uses csv files uploaded on OneHub (currently OneHub master) <br> and loads them
+into google maps. The program displays image url's in a placemark in <br> addition to allowing the user to download a csv
+file and getting the users location. 
+  </p>
+
+<%= form_tag do %>
+
+<% end %> 
+ 
+<form action="/welcome/index" class="new_user" id="new_user" method="get">
+    <label for="user_name">Name</label>
+    <input id="filename" name="filename" value="890327" type="text" />
+    <input id="latitude" name="latitude" value="" type="text" />
+    <input id="longitude" name="longitude" value="" type="text" />
+
+    <button type="button"
+onclick="document.getElementById('demo').innerHTML = my_form(this.form)">
+Add point data</button>
+
+    <button type="button"
+onclick="document.getElementById('demo').innerHTML = setFile(this.form)">
+load a file by name</button>
+
+
+    <input type="submit" />
+  </form>
+
+<p id="myfile"></p>
+
+<% @filename = params["filename"]  %>
+
+<% @coords = @client.download_file(4547, @filename ) %>
+
+<% @point1 = @coords.split(',') %>
+
+<p id="demo"> <%= @coords %>,1,1,1 </p>
+<p id="demo2"></p>
+
+<head> 
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8"> 
+  <title>Google Maps Multiple Markers</title> 
+  <script src="http://maps.google.com/maps/api/js?sensor=false"></script>
+</head> 
+<body>
+  <div id="map" style="width: 600px; height: 600px;"></div>
+
+
+<button onclick="download_csv()">Download CSV</button> 
+
+<button onclick="getLocation()">Add current location</button>
+
+  
+<script>
+
+// turn data from an erb hash into an array in javascript 
+var file_string = document.getElementById("demo").innerHTML;
+var file_array = file_string.split(',');
+//    alert(file_string);
+var lat_array = [];
+var long_array = []; 
+function my_form(form){
+   form.latitude.value = lat_array;
+   form.longitude.value = long_array;  
+}
+
+var data = [
+   [[file_array]], 
+];
+  
+var x = document.getElementById("demo2");
+
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition);
+    } else {
+        x.innerHTML = "Geolocation is not supported by this browser.";
+    }
+}
+
+function showPosition(position) {
+    x.innerHTML = "Latitude: " + position.coords.latitude +
+    "<br>Longitude: " + position.coords.longitude;
+}
+
+function download_csv() {
+    var csv = '';
+    data.forEach(function(row) {
+            csv += row.join(',');
+            csv += "\n";
+    });
+ 
+    console.log(csv);
+    var hiddenElement = document.createElement('a');
+    hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+    hiddenElement.target = '_blank';
+    hiddenElement.download = 'people.csv';
+    hiddenElement.click();
+}
+
+
+    // Define your locations: HTML content for the info window, latitude, longitude
+    // Setup the different icons and shadows
+    var iconURLPrefix = 'http://maps.google.com/mapfiles/ms/icons/';
+    
+    var icons = [
+      iconURLPrefix + 'red-dot.png',
+      iconURLPrefix + 'green-dot.png',
+      iconURLPrefix + 'blue-dot.png',
+      iconURLPrefix + 'orange-dot.png',
+      iconURLPrefix + 'purple-dot.png',
+      iconURLPrefix + 'pink-dot.png',      
+      iconURLPrefix + 'yellow-dot.png'
+    ]
+    var iconsLength = icons.length;
+
+    var map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 10,
+      center: new google.maps.LatLng(-37.92, 151.25),
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      mapTypeControl: false,
+      streetViewControl: false,
+      panControl: false,
+      zoomControlOptions: {
+         position: google.maps.ControlPosition.LEFT_BOTTOM
+      }
+    });
+
+    var infowindow = new google.maps.InfoWindow({
+      maxWidth: 160
+    });
+
+    var markers = new Array();
+    
+    var iconCounter = 0;
+    
+    // Add the markers and infowindows to the map
+    for (var i = 0; i < file_array.length-3; i++) {  
+      var marker = new google.maps.Marker({
+        position: new google.maps.LatLng(file_array[i+1], file_array[i+2]),
+        map: map,
+        icon: icons[iconCounter]
+      });
+
+      markers.push(marker);
+
+         google.maps.event.addListener(marker, 'click', (function(marker, i) {
+        return function() {
+          infowindow.setContent("<img src=" + file_array[i] + ">");
+          infowindow.open(map, marker);
+        }
+      })(marker, i));
+      
+
+      
+      iconCounter++;
+      // We only have a limited number of possible icon colors, so we may have to restart the counter
+      if(iconCounter >= iconsLength) {
+        iconCounter = 0;
+      }
+    }
+
+    function autoCenter() {
+      //  Create a new viewpoint bound
+      var bounds = new google.maps.LatLngBounds();
+      //  Go through each...
+      for (var i = 0; i < markers.length; i++) {  
+        bounds.extend(markers[i].position);
+      }
+      //  Fit these bounds to the map
+      map.fitBounds(bounds);
+    }
+    autoCenter();
+
+
+    google.maps.event.addListener(map, 'click', function(event) {
+    placeMarker(event.latLng);
+    //alert("popup");
+  });
+   
+   function placeMarker(location) {
+  var marker = new google.maps.Marker({
+    position: location,
+    map: map,
+  });
+  var infowindow = new google.maps.InfoWindow({
+    content: 'Latitude: ' + location.lat() + '<br>Longitude: ' + location.lng()
+  });
+  lat_array.push(location.lat());
+  long_array.push(location.lng()); 
+  infowindow.open(map,marker);
+}
+
+  </script> 
+
+<% @workspaces['items'].each do |workspace| %>
+  <% workspace = workspace['workspace'] %>
+  <h2><% workspace['name'] %></h2>
+  <p id="demo3">
+    <%= @hashvar = @client.list_files(4547)%>
+    </p>
+<% end %>
+
+
+<script>
+
+// parses the output from the listing files function using arrays, the user can enter a file by name in a prompt box under a button 
+function setFile(form){
+var myfile = prompt("Please enter your name", "Harry Potter");
+  if (myfile != null) {  
+
+var metadata = document.getElementById("demo3").innerHTML;
+var metadata_array = metadata.split("{")
+
+var name = "current_page";
+var i =0;
+while(i<10000){
+if(metadata_array[i].includes(myfile)){   // form variable 
+ var id_metadata = metadata_array[i].split(",");
+ var file_id = id_metadata[0].split(";"); 
+  alert(file_id[1]); 
+  document.getElementById("filename").innerHTML = file_id[1]; 
+  form.filename.value = file_id[1];
+break;
+}
+  i++;
+}
+
+}
+}
+
+</script>
+
+
